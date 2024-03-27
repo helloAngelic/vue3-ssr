@@ -3,7 +3,7 @@ import { onMounted, onServerPrefetch, ref, useSSRContext } from "vue";
 // api
 import { getARiskOverview, getCreditNote, getDetail, getRelatedParty, getTaxation, downloadPDF, whetherYouHavePermission } from "../services/index";
 // utils
-import { parseUrl, toRequest } from "./indexView.js";
+import { parseUrl, toRequest, toDealDetail } from "./indexView.js";
 
 // ref
 const lydm = ref("");
@@ -11,7 +11,7 @@ const bgId = ref("");
 const headers = ref(null);
 
 const isReady = ref(true);
-const data = ref(null);
+const detailData = ref(null);
 
 onServerPrefetch(async () => {
   const ctx = useSSRContext();
@@ -20,16 +20,15 @@ onServerPrefetch(async () => {
     let res = await toRequest(searchParams);
     setRef(res);
   } catch (error) {
-    console.log("toRequest", error);
+    console.log(`Error toRequest: "${error}". Using original value`);
   }
   if (isReady.value) {
     try {
       let params = {
         bgId: bgId.value,
       };
-      let res = await getARiskOverview(params, headers.value);
-      console.log("接口数据", res.data);
-      data.value = res;
+      let res = await toDealDetail(params, headers.value);
+      detailData.value = res;
     } catch (error) {
       console.log("getARiskOverview", error);
     }
@@ -40,7 +39,6 @@ onMounted(async () => {});
 
 // 设置ref
 function setRef(searchParams) {
-  console.log(searchParams);
   if (searchParams.success) {
     lydm.value = searchParams.lydm || "nqa";
     bgId.value = searchParams.id || "";
@@ -60,10 +58,10 @@ function setRef(searchParams) {
       <img src="../assets/banner.png" alt="" class="img" />
       <div class="banner-content">
         <img src="../assets/banner-title.png" alt="" class="banner-title" />
-        <h1 class="title">广东航天信息爱信诺科技有限公司</h1>
+        <h1 class="title">{{ detailData.qymc || "广东航天信息爱信诺科技有限公司" }}</h1>
         <p class="time">
           <img src="../assets/banner-time.png" alt="" class="banner-time" />
-          报告生成时间：2023-10-20
+          报告生成时间：{{ detailData.bgsj || "2023-10-20" }}
         </p>
       </div>
     </section>

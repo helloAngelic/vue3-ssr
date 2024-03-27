@@ -47,7 +47,7 @@ export async function createServer() {
       }
 
       const [ssrHtml, preloadLinks] = await render(url)
-
+      console.log(ssrHtml);
       const html = template
         .replace(`<!--preload-links-->`, preloadLinks || '')
         .replace(`<!--ssr-outlet-->`, ssrHtml || '')

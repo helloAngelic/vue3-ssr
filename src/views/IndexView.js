@@ -1,61 +1,5 @@
-// function isJsonString(text) {
-//   try {
-//     let obj = JSON.parse(text)
-//     if (obj && typeof obj === 'object') {
-//       return true
-//     }
-//   } catch (error) { }
-//   return false
-// }
-// import CryptoJS from "crypto-js"
-
-// const AES_KEY = '1234567890hijklm'
-// const AES_IV = '1234567890abcdef'
-
-// // AES加解密类实例
-// let AesEncryptionInstance = null
-
-// class AesEncryption {
-//   key
-//   iv
-
-//   constructor(key = AES_KEY, iv = AES_IV) {
-//     if (AesEncryptionInstance) {
-//       return AesEncryptionInstance
-//     }
-
-//     this.key = CryptoJS.enc.Utf8.parse(key);
-//     this.iv = CryptoJS.enc.Utf8.parse(iv);
-//   }
-
-//   get getOptions() {
-//     return {
-//       mode: CryptoJS.mode.CBC,
-//       padding: CryptoJS.pad.Pkcs7,
-//       iv: this.iv
-//     }
-//   }
-
-//   encryptByAES(text) {
-//     text = typeof text === 'string' ? text : JSON.stringify(text)
-//     return CryptoJS.AES.encrypt(text, this.key, this.getOptions).toString()
-
-//   }
-
-//   decryptByAES(text) {
-//     text = CryptoJS.AES.decrypt(text, this.key, this.getOptions).toString(CryptoJS.enc.Utf8)
-//     return isJsonString(text) ? JSON.parse(text) : text
-//   }
-// }
-
-// AesEncryptionInstance = new AesEncryption(AES_KEY, AES_IV)
-
-
-/*
-
-*/
 import AesEncryptionInstance from "../utils/cipher"
-import { login } from "../services"
+import { login, getARiskOverview, getCreditNote, getDetail, getRelatedParty, getTaxation } from "../services"
 
 const PLUS_RE = /\+/g // %2B
 const SPACE_RE = /%253D/g
@@ -84,7 +28,7 @@ function toCipher(text) {
     text = AesEncryptionInstance.decryptByAES(text) || text
     return text
   } catch (error) {
-    console.log(`Error cipher: ${error}`);
+    console.log(`Error ciphering: "${error}". Using original value`);
   }
   return text
 }
@@ -155,6 +99,20 @@ export function parseUrl(url) {
     }
   }
   return query
+}
+
+export  function toDealDetail(params, headers) {
+  return new Promise(async (resolve, reject) => {
+    let res = await getDetail(params, headers)
+    if(res.code == 200) {
+      resolve({
+        qymc:res.data.qymc,
+        bgsj:res.data.bgsj
+      })
+    } else {
+      reject()
+    }
+  })
 }
 
 
