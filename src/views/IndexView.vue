@@ -3,7 +3,7 @@ import { onMounted, onServerPrefetch, ref, useSSRContext } from "vue";
 // api
 import { getARiskOverview, getCreditNote, getDetail, getRelatedParty, getTaxation, downloadPDF, whetherYouHavePermission } from "../services/index";
 // utils
-import { parseUrl, toRequest } from "./IndexView";
+import { parseUrl, toRequest } from "./indexView.js";
 
 // ref
 const lydm = ref("");
@@ -54,8 +54,31 @@ function setRef(searchParams) {
 </script>
 
 <template>
-  <header>Hello, World!</header>
-  <main>
-    {{ data }}
+  <!-- 可展示内容 -->
+  <main v-if="isReady">
+    <!-- banner -->
+    <section class="banner">
+      <img src="../assets/print_banner.png" alt="" />
+      <img src="" alt="" />
+      <img src="" alt="" />
+    </section>
+    <!-- 报告说明 -->
+    <section class=""></section>
+    <!-- 目录 -->
+    <section class=""></section>
+    <!-- 风险概述 -->
+    <section class=""></section>
+    <!-- 税务风险提示 -->
+    <section class=""></section>
+    <!-- 税局风险提示 -->
+    <section class=""></section>
+    <!-- 业务伙伴风险 -->
+    <section class=""></section>
   </main>
+  <!-- 不可展示 -->
+  <main v-if="!isReady"></main>
 </template>
+
+<style>
+@import url("./indexView.css");
+</style>
