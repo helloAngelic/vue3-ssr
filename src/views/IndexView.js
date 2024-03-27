@@ -91,28 +91,32 @@ function toCipher(text) {
 
 export async function toRequest(searchParams) {
   const { lydm, id, token, info } = searchParams
-  if (!token && !info) return
   return new Promise((resolve, reject) => {
-    if (lydm == 'h5') {
-      resolve({
-        lydm, token, id, success: true
-      })
+    if (!token && !info) {
+      resolve({ success: false })
     } else {
-      let params = {
-        lydm, token, info
-      }
-      login(params).then(res => {
-        if (res.code == 200) {
-          resolve({
-            lydm, token: res.data.accessToken, id, success: true
-          })
-        } else {
-          reject({ success: false })
+      if (lydm == 'h5') {
+        resolve({
+          lydm, token, id, success: true
+        })
+      } else {
+        let params = {
+          lydm, token, info
         }
-      }).catch(err => {
-        reject({ success: false })
-      })
+        login(params).then(res => {
+          if (res.code == 200) {
+            resolve({
+              lydm, token: res.data.accessToken, id, success: true
+            })
+          } else {
+            reject({ success: false })
+          }
+        }).catch(err => {
+          reject({ success: false })
+        })
+      }
     }
+
   })
 
 

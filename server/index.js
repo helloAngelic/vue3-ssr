@@ -38,9 +38,11 @@ export async function createServer() {
       if (!isProd) {
         template = fs.readFileSync(path.resolve(__dirname, '../index.html'), 'utf-8')
         template = await vite.transformIndexHtml(url, template)
+        // manifest = {}
         render = (await vite.ssrLoadModule('/src/entry-server.js')).render
       } else {
         template = fs.readFileSync(path.resolve(__dirname, '../dist/client/index.html'), 'utf-8')
+        // manifest = JSON.parse(fs.readFileSync(path.resolve(__dirname, '../dist/client/.vite/ssr-manifest.json'), 'utf-8'))
         render = (await import('../dist/server/entry-server.js')).render
       }
 
