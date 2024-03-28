@@ -1,5 +1,5 @@
 import { createSSRApp } from 'vue'
-// import { createPinia } from 'pinia'
+import { createPinia } from 'pinia'
 import { createRouter } from './router'
 
 import App from './App.vue'
@@ -10,10 +10,10 @@ import App from './App.vue'
 export function createApp() {
   const app = createSSRApp(App)
   const router = createRouter()
-  // const pinia = createPinia()
+  const pinia = createPinia()
 
   app.use(router)
-  // app.use(pinia)
+  app.use(pinia)
 
-  return { app, router }
+  return { app, router, pinia }
 }
