@@ -57,7 +57,7 @@ export function whetherYouHavePermission(params, headers) {
   })
 }
 // 第三方登录
-export function login(params) {
+export function accessToken(params) {
   return request({
     url: '/risk-detection-service/fxSysUser/accessToken',
     method: 'post',

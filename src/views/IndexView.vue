@@ -1,9 +1,10 @@
 <script setup>
 import { onMounted, onServerPrefetch, ref, useSSRContext } from "vue";
 // api
-import { getARiskOverview, getCreditNote, getDetail, getRelatedParty, getTaxation, downloadPDF, whetherYouHavePermission } from "../services/index";
+import { accessToken, downloadPDF, whetherYouHavePermission } from "../services/index";
 // utils
-import { parseUrl, toRequest, toDealDetail } from "./indexView.js";
+import { parseUrl, toDeal } from "./func";
+import { useDataStore } from "../store";
 
 // ref
 const lydm = ref("");
@@ -11,57 +12,124 @@ const bgId = ref("");
 const headers = ref(null);
 
 const isReady = ref(true);
-const detailData = ref(null);
+const isServer = ref(false); // 服务器是否正常
+const isPDF = ref(false); // 是否生成PDF
+const isAuth = ref("1"); // 是否有权限：1.服务器错误；2.无权限；
+
+// store
+const dataStore = useDataStore();
+// data
+// const detailData = ref(null); // 报告详情数据
+// const overviewList = ref(null); // 报告详情数据
+// const overviewObj = ref(null); // 报告详情数据
+// const creditNoteData = ref(null); // 税局风险数据
+// const relatedPartyData = ref(null); // 关系伙伴风险数据
+// const taxationData = ref(null); // 税务风险数据
 
 onServerPrefetch(async () => {
   const ctx = useSSRContext();
-  const searchParams = parseUrl(ctx.url);
-  try {
-    let res = await toRequest(searchParams);
-    setRef(res);
-  } catch (error) {
-    console.log(`Error toRequest: "${error}". Using original value`);
-  }
-  if (isReady.value) {
+  let searchParams = parseUrl(ctx.url);
+  let { id, token, info } = searchParams;
+  // init Ref
+  bgId.value = id || "";
+  lydm.value = searchParams.lydm || "nqa";
+  isPDF.value = new Boolean(searchParams.isPDF);
+  // isLogin
+  if ((lydm.value == "h5" || lydm.value == "nqa") && token && id) {
+    // 不需要登录
+    headers.value = {
+      "X-Access-Token": token,
+    };
+  } else if (lydm.value !== "h5" && lydm.value != "nqa" && (token || info) && id) {
+    // 第三方登录
     try {
-      let params = {
-        bgId: bgId.value,
-      };
-      let res = await toDealDetail(params, headers.value);
-      detailData.value = res;
+      let res = await accessToken({
+        lydm: lydm.value,
+        token,
+        info,
+      });
+      if (res.code == 200) {
+        headers.value = {
+          "X-Access-Token": res.data.accessToken,
+        };
+      } else {
+        isReady.value = false;
+        isAuth.value = "1";
+      }
     } catch (error) {
-      console.log("getARiskOverview", error);
+      isReady.value = false;
+      isAuth.value = "1";
     }
+  } else {
+    isReady.value = false;
+    isAuth.value = "1";
   }
+  if (!isReady.value) return;
+  let params = {
+    bgId: bgId.value,
+  };
+  // isPermission
+  try {
+    if (!isPDF.value) {
+      let res = await whetherYouHavePermission(params, headers.value);
+      if (res.code == 200 && !res.data) {
+        isAuth.value = "2";
+      } else {
+        isReady.value = false;
+        isAuth.value = "1";
+      }
+    }
+  } catch (error) {
+    isReady.value = false;
+    isAuth.value = "1";
+  }
+  if (!isReady.value) return;
+  //  data
+  try {
+    let res = await dataStore.getAllData(params, headers.value);
+    if (!res) {
+      console.log("error");
+      isReady.value = false;
+      isAuth.value = "1";
+    }
+    // let res = await toDeal(params, headers.value);
+    // const [detail, overview, creditNote, relatedParty, taxation] = res;
+    // dataStore.detailData = detail ? detail.data : null;
+    // dataStore.aRiskOverviewList = overview && overview.list ? overview.list : [];
+    // dataStore.aRiskOverviewObj = overview && overview.table ? overview.table : [];
+    // dataStore.creditNoteData = creditNote ? creditNote.data : [];
+    // dataStore.relatedPartyData = relatedParty ? relatedParty.data : [];
+    // dataStore.taxationData = taxation ? taxation.data : [];
+  } catch (error) {
+    isReady.value = false;
+    isAuth.value = "1";
+  }
+  if (!isReady.value) return;
 });
 
-onMounted(async () => {});
-
-// 设置ref
-function setRef(searchParams) {
-  if (searchParams.success) {
-    lydm.value = searchParams.lydm || "nqa";
-    bgId.value = searchParams.id || "";
-    headers.value = {
-      "X-Access-Token": searchParams.token,
-    };
-    isReady.value = searchParams.success;
-  }
-}
+onMounted(async () => {
+  console.log(dataStore);
+  // detailData.value = dataStore.detailData;
+  // overviewList.value = dataStore.aRiskOverviewList;
+  // overviewObj.value = dataStore.aRiskOverviewObj;
+  // creditNoteData.value = dataStore.creditNoteData;
+  // relatedPartyData.value = dataStore.relatedPartyData;
+  // taxationData.value = dataStore.taxationData;
+});
 </script>
 
 <template>
   <!-- 可展示内容 -->
-  <main v-if="isReady" class="print-pdf">
+  <main v-show="isReady" class="print-pdf">
     <!-- banner -->
     <section class="banner">
       <img src="../assets/banner.png" alt="" class="img" />
       <div class="banner-content">
         <img src="../assets/banner-title.png" alt="" class="banner-title" />
-        <h1 class="title">{{ detailData.qymc || "广东航天信息爱信诺科技有限公司" }}</h1>
+        <h1 class="title">{{ dataStore.companyName || "企业名称" }}</h1>
         <p class="time">
           <img src="../assets/banner-time.png" alt="" class="banner-time" />
-          报告生成时间：{{ detailData.bgsj || "2023-10-20" }}
+          报告生成时间：{{ dataStore.sj || "报告时间" }}
         </p>
       </div>
     </section>
@@ -69,7 +137,7 @@ function setRef(searchParams) {
     <section class="description">
       <header class="section-title-wrapper">
         <h1 class="section-title">
-          报告说明
+          <span>报告说明</span>
           <img src="../assets/title.png" alt="" class="img" />
         </h1>
       </header>
@@ -90,33 +158,107 @@ function setRef(searchParams) {
     <section class="directory">
       <header class="section-title-wrapper">
         <h1 class="section-title">
-          目&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;录
+          <span>目&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;录</span>
           <img src="../assets/title.png" alt="" class="img" />
         </h1>
       </header>
       <main class="content"></main>
     </section>
     <!-- 风险概述 -->
-    <section class="">
+    <section class="overview">
       <header class="section-title-wrapper">
         <h1 class="section-title">
-          一、风险概述
+          <span>一、风险概述</span>
+          <img src="../assets/title.png" alt="" class="img" />
+        </h1>
+      </header>
+      <main class="content">
+        <p class="text">本次报告生成时间为 {{ dataStore.sjShow }}，通过对发票、财务报表、纳税申报表的综合分析检测结果如下:</p>
+        <section style="margin-bottom: 30px">
+          <table width="100%" class="table1">
+            <tbody>
+              <tr>
+                <th>风险类型</th>
+                <th>检测项</th>
+                <th>风险数</th>
+              </tr>
+              <tr v-for="(item, index) in dataStore.overviewList" :key="index" :style="index % 2 === 1 ? '' : 'background:#f5f5f5'">
+                <td>{{ item.fxlx }}</td>
+                <td>{{ item.jcx }}</td>
+                <td :style="item.fxsStyle">{{ item.fxs }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+        <!-- <section>
+          <table width="100%" class="table2" v-if="overviewObj">
+            <colgroup>
+              <col width="8%" />
+              <col width="46%" />
+              <col width="46%" />
+            </colgroup>
+            <tbody>
+              <tr>
+                <td colspan="3" class="head">税务风险</td>
+              </tr>
+              <template v-for="(item, index) in overviewObj?.highList">
+                <tr>
+                  <td v-if="index == 0" class="high th" :rowspan="overviewObj?.highListLength">高风险</td>
+                  <td v-if="item.isFirst" :rowspan="item.rowSpan1">{{ item.fxlxmc }}</td>
+                  <td :rowspan="item.rowSpan2">{{ item.fxdmc }}</td>
+                </tr>
+              </template>
+
+              <tr>
+                <td class="medium th">中风险</td>
+              </tr>
+              <tr>
+                <td class="low th">低风险</td>
+              </tr>
+            </tbody>
+          </table>
+        </section> -->
+      </main>
+    </section>
+    <!-- 税务风险提示 -->
+    <section class="taxation">
+      <header class="section-title-wrapper">
+        <h1 class="section-title">
+          <span>二. 税务风险提示</span>
           <img src="../assets/title.png" alt="" class="img" />
         </h1>
       </header>
       <main class="content"></main>
     </section>
-    <!-- 税务风险提示 -->
-    <section class=""></section>
     <!-- 税局风险提示 -->
-    <section class=""></section>
+    <section class="creditNoteF">
+      <header class="section-title-wrapper">
+        <h1 class="section-title">
+          <span>三. 税局风险提示</span>
+          <img src="../assets/title.png" alt="" class="img" />
+        </h1>
+      </header>
+      <main class="content"></main>
+    </section>
     <!-- 业务伙伴风险 -->
-    <section class=""></section>
+    <section class="relatedParty">
+      <header class="section-title-wrapper">
+        <h1 class="section-title">
+          <span>四. 业务伙伴风险提示</span>
+          <img src="../assets/title.png" alt="" class="img" />
+        </h1>
+      </header>
+      <main class="content"></main>
+    </section>
   </main>
-  <!-- 不可展示 -->
-  <main v-if="!isReady"></main>
+  <!-- 不可展示-服务器错误 -->
+  <main v-show="!isReady" class="error">
+    <img src="../assets/404.svg" alt="" class="error-img" />
+    <span>{{ isAuth && isAuth === "1" ? "抱歉，服务器出现异常!" : "抱歉，无权查看他人报告" }}</span>
+  </main>
 </template>
 
 <style>
-@import url("./indexView.css");
+@import url("./index.css");
 </style>
+./q.js
