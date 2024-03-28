@@ -19,12 +19,6 @@ const isAuth = ref("1"); // 是否有权限：1.服务器错误；2.无权限；
 // store
 const dataStore = useDataStore();
 // data
-// const detailData = ref(null); // 报告详情数据
-// const overviewList = ref(null); // 报告详情数据
-// const overviewObj = ref(null); // 报告详情数据
-// const creditNoteData = ref(null); // 税局风险数据
-// const relatedPartyData = ref(null); // 关系伙伴风险数据
-// const taxationData = ref(null); // 税务风险数据
 
 onServerPrefetch(async () => {
   const ctx = useSSRContext();
@@ -92,14 +86,6 @@ onServerPrefetch(async () => {
       isReady.value = false;
       isAuth.value = "1";
     }
-    // let res = await toDeal(params, headers.value);
-    // const [detail, overview, creditNote, relatedParty, taxation] = res;
-    // dataStore.detailData = detail ? detail.data : null;
-    // dataStore.aRiskOverviewList = overview && overview.list ? overview.list : [];
-    // dataStore.aRiskOverviewObj = overview && overview.table ? overview.table : [];
-    // dataStore.creditNoteData = creditNote ? creditNote.data : [];
-    // dataStore.relatedPartyData = relatedParty ? relatedParty.data : [];
-    // dataStore.taxationData = taxation ? taxation.data : [];
   } catch (error) {
     isReady.value = false;
     isAuth.value = "1";
@@ -109,12 +95,6 @@ onServerPrefetch(async () => {
 
 onMounted(async () => {
   console.log(dataStore);
-  // detailData.value = dataStore.detailData;
-  // overviewList.value = dataStore.aRiskOverviewList;
-  // overviewObj.value = dataStore.aRiskOverviewObj;
-  // creditNoteData.value = dataStore.creditNoteData;
-  // relatedPartyData.value = dataStore.relatedPartyData;
-  // taxationData.value = dataStore.taxationData;
 });
 </script>
 
@@ -190,31 +170,74 @@ onMounted(async () => {
             </tbody>
           </table>
         </section>
-        <!-- <section>
-          <table width="100%" class="table2" v-if="overviewObj">
+        <section>
+          <table width="100%" class="table2">
             <colgroup>
               <col width="8%" />
               <col width="46%" />
               <col width="46%" />
             </colgroup>
             <tbody>
-              <tr>
+              <tr style="width: 100%">
                 <td colspan="3" class="head">税务风险</td>
               </tr>
-              <template v-for="(item, index) in overviewObj?.highList">
+              <tr style="width: 100%" v-for="(item, index) in dataStore.overviewTable" :key="index">
+                <template v-if="item.isSpace"> </template>
+                <template v-else>
+                  <td v-if="item.isTh" :rowspan="item.thRowSpan" :style="item.thStyle">
+                    <span class="">{{ item.thTitle }}</span>
+                  </td>
+                  <template v-if="item.isBlock">
+                    <td rowspan="2" colspan="2">暂无风险</td>
+                  </template>
+                  <template v-else>
+                    <td v-if="item.isTd" :rowspan="item.tdRowSpan" :style="item.tdStyle">{{ item.fxlxmc }}</td>
+                    <td :style="item.tdStyle" :rowspan="item.tdRowSpan">
+                      <a href="j">{{ item.fxdmc }}</a>
+                    </td>
+                  </template>
+                </template>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+        <!-- <section class="overview-table">
+          <table width="100%">
+            <thead>
+              <tr>
+                <th>税务风险</th>
+              </tr>
+            </thead>
+          </table>
+          <table width="100%" class="table">
+            <colgroup>
+              <col width="8%" />
+              <col width="46%" />
+              <col width="46%" />
+            </colgroup>
+            <tbody>
+              <template v-if="dataStore.overviewHigh.flag == 1">
                 <tr>
-                  <td v-if="index == 0" class="high th" :rowspan="overviewObj?.highListLength">高风险</td>
-                  <td v-if="item.isFirst" :rowspan="item.rowSpan1">{{ item.fxlxmc }}</td>
-                  <td :rowspan="item.rowSpan2">{{ item.fxdmc }}</td>
+                  <td rowspan="2">高风险</td>
+                  <td rowspan="2" colspan="2">暂无风险</td>
+                </tr>
+                <tr></tr>
+              </template>
+              <template v-if="dataStore.overviewHigh.flag == 2">
+                <tr>
+                  <td rowspan="2">高风险</td>
+                  <td rowspan="2">{{ dataStore.overviewHigh.list[0].fxlxmc }}</td>
+                  <td rowspan="2">{{ dataStore.overviewHigh.list[0].fxdmc }}</td>
+                </tr>
+                <tr></tr>
+              </template>
+              <template v-else>
+                <tr v-for="(item, index) in dataStore.overviewHigh.list" :key="index">
+                  <td v-if="index === 0" :rowspan="dataStore.overviewHigh.list.length">高风险</td>
+                  <td v-if="item.isTd" :rowspan="item.tdRowspan">{{ item.fxlxmc }}</td>
+                  <td>{{ item.fxdmc }}</td>
                 </tr>
               </template>
-
-              <tr>
-                <td class="medium th">中风险</td>
-              </tr>
-              <tr>
-                <td class="low th">低风险</td>
-              </tr>
             </tbody>
           </table>
         </section> -->
