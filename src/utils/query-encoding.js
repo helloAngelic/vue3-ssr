@@ -7,6 +7,7 @@ const SLASH_RE = /\//g // %2F
 const EQUAL_RE = /=/g // %3D
 const IM_RE = /\?/g // %3F
 const PLUS_RE = /\+/g // %2B
+export const EQUAL2_RE = /%253D/g
 
 const ENC_BRACKET_OPEN_RE = /%5B/g // [
 const ENC_BRACKET_CLOSE_RE = /%5D/g // ]
@@ -202,6 +203,56 @@ export function parseQuery(search) {
     const eqPos = searchParam.indexOf('=')
     const key = decode(eqPos < 0 ? searchParam : searchParam.slice(0, eqPos))
     const value = eqPos < 0 ? null : decode(searchParam.slice(eqPos + 1))
+    if (key in query) {
+      // an extra variable for ts types
+      let currentValue = query[key]
+      if (!isArray(currentValue)) {
+        currentValue = query[key] = [currentValue]
+      }
+      // we force the modification
+      currentValue.push(value)
+    } else {
+      query[key] = value
+    }
+  }
+  return query
+}
+
+/**
+ * AES解密
+ * @param {string} text 
+ * @returns 
+ */
+function toDecryptByAES(text) {
+  try {
+    text = AesEncryptionInstance.decryptByAES(text) || text
+    return text
+  } catch (error) {
+    console.log(`Error ciphering: "${error}". Using original value`);
+  }
+  return text
+}
+
+/**
+ * 解析带?的url
+ * @param {string} url 
+ */
+export function parseUrl(url) {
+  const index = url.indexOf('?')
+  const query = {}
+  if (url === '' || url === '/' || url === '?' || url.indexOf('?') === -1) return query
+
+  const search = url.slice(index + 1)
+  const searchParams = search.split('&')
+  for (let i = 0; i < searchParams.length; ++i) {
+    // pre decode the + into space
+    const searchParam = searchParams[i].replace(PLUS_RE, ' ').replace(SPACE_RE, '=')
+    // allow the = character
+    const eqPos = searchParam.indexOf('=')
+    const key = decode(eqPos < 0 ? searchParam : searchParam.slice(0, eqPos))
+    const value = toDecryptByAES(eqPos < 0 ? null : decode(searchParam.slice(eqPos + 1)))
+
+
     if (key in query) {
       // an extra variable for ts types
       let currentValue = query[key]

@@ -6,7 +6,7 @@ const axiosInstance = axios.create({
   timeout: 600000
 })
 
-const baseURL = 'https://nqa-pre.aisino.cn/'
+const baseURL = ''
 
 axiosInstance.interceptors.request.use(config => {
   const _urlArr = config.url.split('/')

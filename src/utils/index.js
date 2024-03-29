@@ -1,3 +1,4 @@
+
 /**
  * 判断是否是JSON字符串
  * @param {string} text 
